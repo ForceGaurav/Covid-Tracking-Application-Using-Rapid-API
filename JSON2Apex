@@ -1,0 +1,19 @@
+public class JSON2Apex {
+    public String statusMsg;
+    public List<Data> data;
+    public class Data {
+        public String code;
+        public String name;
+        public String active;
+        public String deaths;
+        public String confirmed;
+        public String newdeaths;
+        public String recovered;
+        public String newconfirmed;
+        public String newrecovered;
+        public String lastupdatedtime;
+    }    
+    public static JSON2Apex parse(String json) {
+        return (JSON2Apex) System.JSON.deserialize(json, JSON2Apex.class);
+    }
+}
