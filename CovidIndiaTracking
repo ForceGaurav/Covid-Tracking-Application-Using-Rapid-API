@@ -1,0 +1,55 @@
+public class CovidIndiaTracking implements Queueable, Database.AllowsCallouts {
+    public void execute(QueueableContext context) {
+        String endpoint='https://covid-19-india-data-by-zt.p.rapidapi.com/GetIndiaStateWiseData';
+        Http h = new Http();
+        HttpRequest req = new HttpRequest();
+        req.setEndpoint(endpoint);
+        req.setHeader('x-rapidapi-host', 'covid-19-india-data-by-zt.p.rapidapi.com');
+        req.setHeader('x-rapidapi-key', '***********************************');
+        req.setMethod('GET');
+        HttpResponse res = h.send(req);
+        System.debug('res.getBody()---->'+res.getBody());
+        JSON2Apex aClass = (JSON2Apex) System.JSON.deserialize(res.getBody(), JSON2Apex.class); 
+        System.debug('aClass-->'+aClass.data);
+        List<IndiaCovidTracking__c> todaysCovidRecord=[SELECT id,State__c FROM IndiaCovidTracking__c WHERE CreatedDate=TODAY];
+        Map<String,String> currentStatemapping=new Map<String,String>();
+        if(todaysCovidRecord!=NULL && todaysCovidRecord.size()>0){
+            for(IndiaCovidTracking__c covid:todaysCovidRecord){
+                currentStatemapping.put(covid.State__c, covid.id);
+            }
+        }
+        List<IndiaCovidTracking__c> covidtrackList=new List<IndiaCovidTracking__c>();
+        for(JSON2Apex.Data datava:aClass.data){
+            IndiaCovidTracking__c codata=new IndiaCovidTracking__c();
+            System.debug('datava-->'+datava.name);
+            if(currentStatemapping.containsKey(datava.name)){
+                codata.Id=currentStatemapping.get(datava.name);
+                codata.State__c=datava.name;
+                codata.confirmed__c=Integer.valueof(datava.confirmed);
+                codata.Active__c=Integer.valueof(datava.active);
+                codata.Recovered__c= Integer.valueof(datava.recovered);
+                codata.Deaths__c=Integer.valueof(datava.deaths);
+                codata.NewConfirmed__c=Integer.valueof(datava.newconfirmed);
+                codata.Newdeaths__c=Integer.valueof(datava.newdeaths);
+                codata.NewreCovered__c=Integer.valueof(datava.newrecovered);
+                codata.Lastupdatedtime__c=datava.lastupdatedtime;
+                covidtrackList.add(codata);
+            }
+            else{
+                codata.State__c=datava.name;
+                codata.confirmed__c=Integer.valueof(datava.confirmed);
+                codata.Active__c=Integer.valueof(datava.active);
+                codata.Recovered__c= Integer.valueof(datava.recovered);
+                codata.Deaths__c=Integer.valueof(datava.deaths);
+                codata.NewConfirmed__c=Integer.valueof(datava.newconfirmed);
+                codata.Newdeaths__c=Integer.valueof(datava.newdeaths);
+                codata.NewreCovered__c=Integer.valueof(datava.newrecovered);
+                codata.Lastupdatedtime__c=datava.lastupdatedtime;
+                covidtrackList.add(codata); 
+            }
+        }
+        if(covidtrackList.size()>0 && covidtrackList!=NULL){
+            upsert covidtrackList;
+        }
+    }
+}
